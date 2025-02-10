@@ -4,6 +4,7 @@ import turtle as t
 t.speed(30)
 
 pattern=1
+t.bgcolor("orange")
 
 for i in range (100):
     for color in ["black","blue"]:
@@ -16,3 +17,4 @@ for i in range (100):
         #Black and Blue are it's main colors
         #It is a pattern
         #It follows an arrow
+        #It has a background color of orange

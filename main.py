@@ -12,3 +12,7 @@ for i in range (100):
         t.right(90)
         t.left(45)
         pattern+=1
+        #This is an octagon
+        #Black and Blue are it's main colors
+        #It is a pattern
+        #It follows an arrow

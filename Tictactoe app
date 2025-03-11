@@ -1,0 +1,160 @@
+import tkinter as tk
+import random
+import json
+import os
+
+# Initialize main app
+root = tk.Tk()
+root.title("Tic-Tac-Toe")
+
+# Game variables
+board = [""] * 9
+current_player = "X"
+game_mode = None  # "PvP" or "PvAI"
+leaderboard = {"X": 0, "O": 0, "Ties": 0}
+
+# Load leaderboard if exists
+if os.path.exists("leaderboard.json"):
+    with open("leaderboard.json", "r") as f:
+        leaderboard = json.load(f)
+
+# Functions
+def save_leaderboard():
+    with open("leaderboard.json", "w") as f:
+        json.dump(leaderboard, f)
+
+def check_winner():
+    """Checks if someone won or if it's a tie."""
+    global leaderboard
+
+    win_conditions = [(0,1,2), (3,4,5), (6,7,8),  # Rows
+                      (0,3,6), (1,4,7), (2,5,8),  # Columns
+                      (0,4,8), (2,4,6)]           # Diagonals
+
+    for a, b, c in win_conditions:
+        if board[a] == board[b] == board[c] and board[a] != "":
+            return board[a]  # Return winner ("X" or "O")
+    
+    if "" not in board:
+        return "Tie"
+
+    return None  # No winner yet
+
+def minimax(board, is_maximizing):
+    """AI decision-making using minimax algorithm."""
+    winner = check_winner()
+    if winner == "X": return -1  # X is human
+    if winner == "O": return 1   # O is AI
+    if winner == "Tie": return 0
+    
+    if is_maximizing:
+        best_score = -float("inf")
+        for i in range(9):
+            if board[i] == "":
+                board[i] = "O"
+                score = minimax(board, False)
+                board[i] = ""
+                best_score = max(score, best_score)
+        return best_score
+    else:
+        best_score = float("inf")
+        for i in range(9):
+            if board[i] == "":
+                board[i] = "X"
+                score = minimax(board, True)
+                board[i] = ""
+                best_score = min(score, best_score)
+        return best_score
+
+def best_ai_move():
+    """AI picks the best move using Minimax."""
+    best_score = -float("inf")
+    best_move = None
+
+    for i in range(9):
+        if board[i] == "":
+            board[i] = "O"
+            score = minimax(board, False)
+            board[i] = ""
+            if score > best_score:
+                best_score = score
+                best_move = i
+
+    return best_move
+
+def handle_click(index):
+    """Handles user clicks on the board."""
+    global current_player, game_mode
+
+    if board[index] == "" and check_winner() is None:
+        board[index] = current_player
+        buttons[index].config(text=current_player)
+
+        winner = check_winner()
+        if winner:
+            update_leaderboard(winner)
+            return
+
+        # Switch player
+        current_player = "O" if current_player == "X" else "X"
+
+        if game_mode == "PvAI" and current_player == "O":
+            ai_move = best_ai_move()
+            if ai_move is not None:
+                handle_click(ai_move)
+
+def update_leaderboard(winner):
+    """Updates and displays the leaderboard."""
+    global leaderboard
+
+    if winner in leaderboard:
+        leaderboard[winner] += 1
+    save_leaderboard()
+
+    if winner == "X":
+        result_label.config(text="You Win!", fg="green")
+    elif winner == "O":
+        result_label.config(text="You Lose!", fg="red")
+    else:
+        result_label.config(text="It's a Tie!", fg="blue")
+
+def reset_game():
+    """Resets the board for a new game."""
+    global board, current_player
+    board = [""] * 9
+    current_player = "X"
+    for button in buttons:
+        button.config(text="")
+    result_label.config(text="")
+
+def start_game(mode):
+    """Starts the game in the selected mode."""
+    global game_mode
+    game_mode = mode
+    reset_game()
+
+# UI Setup
+frame = tk.Frame(root)
+frame.pack()
+
+buttons = []
+for i in range(9):
+    btn = tk.Button(frame, text="", font=("Arial", 20), width=5, height=2,
+                    command=lambda i=i: handle_click(i))
+    btn.grid(row=i//3, column=i%3)
+    buttons.append(btn)
+
+result_label = tk.Label(root, text="", font=("Arial", 16))
+result_label.pack()
+
+play_pvp = tk.Button(root, text="Play PvP", font=("Arial", 14), command=lambda: start_game("PvP"))
+play_pvp.pack(side="left", padx=10)
+
+play_pvai = tk.Button(root, text="Play PvAI", font=("Arial", 14), command=lambda: start_game("PvAI"))
+play_pvai.pack(side="right", padx=10)
+
+reset_button = tk.Button(root, text="Reset", font=("Arial", 14), command=reset_game)
+reset_button.pack(pady=10)
+
+# Run the game loop
+root.mainloop()
